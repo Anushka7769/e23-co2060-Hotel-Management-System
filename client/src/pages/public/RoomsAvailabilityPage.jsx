@@ -1,10 +1,65 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { fetchHotelById, fetchHotelRooms } from "../../services/hotelApi";
 import sampleHotels from "../../data/sampleHotels";
 import sampleRooms from "../../data/sampleRooms";
 
 function RoomsAvailabilityPage() {
   const { hotelId } = useParams();
-  const hotel = sampleHotels.find((item) => item.id === Number(hotelId)) || sampleHotels[0];
+
+  const fallbackHotel =
+    sampleHotels.find((item) => item.id === Number(hotelId)) || sampleHotels[0];
+
+  const [hotel, setHotel] = useState(fallbackHotel);
+  const [rooms, setRooms] = useState(sampleRooms);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadRoomsPage() {
+      try {
+        const [hotelResponse, roomsResponse] = await Promise.all([
+          fetchHotelById(hotelId),
+          fetchHotelRooms(hotelId),
+        ]);
+
+        const apiHotel = hotelResponse.data;
+
+        setHotel({
+          ...fallbackHotel,
+          ...apiHotel,
+          area: apiHotel.address || fallbackHotel.area,
+          verified: Boolean(apiHotel.is_verified),
+        });
+
+        const roomsFromApi = roomsResponse.data.map((room, index) => {
+          const fallbackRoom = sampleRooms[index] || sampleRooms[0];
+          const pricePerNight = Number(room.price_per_night);
+
+          return {
+            ...fallbackRoom,
+            id: room.id,
+            name: room.room_type,
+            guests: `${room.capacity} guests`,
+            pricePerNight,
+            totalPrice: pricePerNight * 2,
+            available: room.available_rooms > 0,
+            image: fallbackRoom.image,
+            facilities: fallbackRoom.facilities,
+          };
+        });
+
+        setRooms(roomsFromApi);
+      } catch (err) {
+        setError("Could not load rooms from backend. Showing sample rooms.");
+        setRooms(sampleRooms);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRoomsPage();
+  }, [hotelId]);
 
   return (
     <div className="rooms-page">
@@ -32,15 +87,18 @@ function RoomsAvailabilityPage() {
         Select dates to see available rooms and pricing. LKR prices are shown for 2 nights.
       </div>
 
+      {loading && <p>Loading rooms...</p>}
+      {error && <p className="form-note">{error}</p>}
+
       <section className="room-tabs">
         <button>All rooms</button>
-        <button>Standard Room</button>
-        <button>Deluxe Room</button>
-        <button>Junior Suite</button>
+        {rooms.map((room) => (
+          <button key={room.id}>{room.name}</button>
+        ))}
       </section>
 
       <section className="room-list">
-        {sampleRooms.map((room) => (
+        {!loading && rooms.map((room) => (
           <div className="room-card" key={room.id}>
             <img src={room.image} alt={room.name} className="room-image" />
 
