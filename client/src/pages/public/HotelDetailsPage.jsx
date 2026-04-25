@@ -1,12 +1,52 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { fetchHotelById } from "../../services/hotelApi";
 import sampleHotels from "../../data/sampleHotels";
 
 function HotelDetailsPage() {
   const { hotelId } = useParams();
-  const hotel = sampleHotels.find((item) => item.id === Number(hotelId)) || sampleHotels[0];
+
+  const fallbackHotel =
+    sampleHotels.find((item) => item.id === Number(hotelId)) || sampleHotels[0];
+
+  const [hotel, setHotel] = useState(fallbackHotel);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadHotel() {
+      try {
+        const response = await fetchHotelById(hotelId);
+        const apiHotel = response.data;
+
+        setHotel({
+          ...fallbackHotel,
+          ...apiHotel,
+          image: fallbackHotel.image,
+          area: apiHotel.address || fallbackHotel.area,
+          verified: Boolean(apiHotel.is_verified),
+          rating: fallbackHotel.rating,
+          reviewText: fallbackHotel.reviewText,
+          reviews: fallbackHotel.reviews,
+          facilities: fallbackHotel.facilities,
+          description: apiHotel.description || fallbackHotel.description,
+        });
+      } catch (err) {
+        setError("Could not load hotel details from backend. Showing sample details.");
+        setHotel(fallbackHotel);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadHotel();
+  }, [hotelId]);
 
   return (
     <div className="hotel-details-page">
+      {loading && <p>Loading hotel details...</p>}
+      {error && <p className="form-note">{error}</p>}
+
       <section className="details-gallery">
         <img src={hotel.image} alt={hotel.name} className="main-gallery-image" />
         <div className="gallery-side">
@@ -33,9 +73,7 @@ function HotelDetailsPage() {
           </div>
 
           <p className="hotel-description">
-            A serene hotel experience in Sri Lanka with comfortable rooms, beautiful surroundings,
-            helpful staff, and easy access to nearby attractions. Perfect for tourists who want a
-            relaxing stay with convenient booking and clear hotel information.
+            {hotel.description}
           </p>
 
           <div className="hotel-tabs">

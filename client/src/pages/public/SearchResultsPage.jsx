@@ -1,7 +1,44 @@
+import { useEffect, useState } from "react";
+import { fetchHotels } from "../../services/hotelApi";
 import sampleHotels from "../../data/sampleHotels";
 import HotelCard from "../../components/hotel/HotelCard";
 
 function SearchResultsPage() {
+  const [hotels, setHotels] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadHotels() {
+      try {
+        const response = await fetchHotels();
+
+        const hotelsFromApi = response.data.map((hotel, index) => {
+          const fallbackHotel = sampleHotels[index] || sampleHotels[0];
+
+          return {
+            ...fallbackHotel,
+            ...hotel,
+            image: fallbackHotel.image,
+            rating: fallbackHotel.rating,
+            reviews: fallbackHotel.reviews,
+            pricePerNight: hotel.price_per_night || fallbackHotel.pricePerNight,
+            amenities: fallbackHotel.amenities,
+          };
+        });
+
+        setHotels(hotelsFromApi);
+      } catch (err) {
+        setError("Could not load hotels from backend. Showing sample hotels.");
+        setHotels(sampleHotels);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadHotels();
+  }, []);
+
   return (
     <div className="results-page">
       <div className="results-search-bar">
@@ -46,7 +83,7 @@ function SearchResultsPage() {
         <main className="hotel-results">
           <div className="results-header">
             <div>
-              <h2>Kandy: {sampleHotels.length} stays found</h2>
+              <h2>Kandy: {hotels.length} stays found</h2>
               <p>Showing available hotels for your Sri Lanka trip</p>
             </div>
 
@@ -57,7 +94,11 @@ function SearchResultsPage() {
             </select>
           </div>
 
-          {sampleHotels.map((hotel) => (
+          {loading && <p>Loading hotels...</p>}
+
+          {error && <p className="form-note">{error}</p>}
+
+          {!loading && hotels.map((hotel) => (
             <HotelCard key={hotel.id} hotel={hotel} />
           ))}
         </main>
