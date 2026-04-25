@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const dbTestRoutes = require("./routes/dbTest.routes");
 const hotelRoutes = require("./routes/hotel.routes");
 const healthRoutes = require("./routes/health.routes");
+const roomRoutes = require("./routes/room.routes");
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.get("/", (req, res) => {
 app.use("/api/health", healthRoutes);
 app.use("/api/db-test", dbTestRoutes);
 app.use("/api/hotels", hotelRoutes);
+app.use("/api/hotels/:hotelId/rooms", roomRoutes);
 
 const PORT = process.env.PORT || 5000;
 
