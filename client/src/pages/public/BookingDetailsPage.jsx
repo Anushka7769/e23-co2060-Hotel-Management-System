@@ -1,10 +1,64 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import sampleHotels from "../../data/sampleHotels";
 import sampleRooms from "../../data/sampleRooms";
 
 function BookingDetailsPage() {
+  const navigate = useNavigate();
+
   const hotel = sampleHotels[0];
   const room = sampleRooms[0];
+
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    country: "Sri Lanka",
+    arrivalTime: "10:00 AM - 12:00 PM",
+    specialRequests: "",
+  });
+
+  function handleChange(event) {
+    const { name, value } = event.target;
+
+    setFormData((currentData) => ({
+      ...currentData,
+      [name]: value,
+    }));
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    const bookingDraft = {
+      guest: formData,
+      booking: {
+        tourist_id: 3,
+        hotel_id: 1,
+        room_id: 1,
+        check_in: "2026-05-18",
+        check_out: "2026-05-19",
+        guests: 2,
+        total_amount: room.totalPrice,
+      },
+      display: {
+        hotelName: hotel.name,
+        hotelArea: hotel.area,
+        hotelCity: hotel.city,
+        hotelImage: hotel.image,
+        hotelVerified: hotel.verified,
+        roomName: room.name,
+        dateText: "May 18 - May 19",
+        guestText: "2 adults · 1 room",
+        totalText: `LKR ${room.totalPrice.toLocaleString()}`,
+      },
+    };
+
+    localStorage.setItem("tourismhub_booking_draft", JSON.stringify(bookingDraft));
+
+    navigate("/booking/payment");
+  }
 
   return (
     <div className="booking-page">
@@ -18,35 +72,67 @@ function BookingDetailsPage() {
       </section>
 
       <div className="booking-layout">
-        <form className="guest-form">
+        <form className="guest-form" onSubmit={handleSubmit}>
           <h2>Guest Information</h2>
 
           <div className="form-grid two-columns">
             <div className="form-group">
               <label>First Name</label>
-              <input type="text" placeholder="John" />
+              <input
+                type="text"
+                name="firstName"
+                placeholder="John"
+                value={formData.firstName}
+                onChange={handleChange}
+                required
+              />
             </div>
 
             <div className="form-group">
               <label>Last Name</label>
-              <input type="text" placeholder="Doe" />
+              <input
+                type="text"
+                name="lastName"
+                placeholder="Doe"
+                value={formData.lastName}
+                onChange={handleChange}
+                required
+              />
             </div>
           </div>
 
           <div className="form-group">
             <label>Email Address</label>
-            <input type="email" placeholder="john.doe@example.com" />
+            <input
+              type="email"
+              name="email"
+              placeholder="john.doe@example.com"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <div className="form-grid two-columns">
             <div className="form-group">
               <label>Phone Number</label>
-              <input type="text" placeholder="+94 71 234 5678" />
+              <input
+                type="text"
+                name="phone"
+                placeholder="+94 71 234 5678"
+                value={formData.phone}
+                onChange={handleChange}
+                required
+              />
             </div>
 
             <div className="form-group">
               <label>Country</label>
-              <select defaultValue="Sri Lanka">
+              <select
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+              >
                 <option>Sri Lanka</option>
                 <option>India</option>
                 <option>United Kingdom</option>
@@ -57,7 +143,11 @@ function BookingDetailsPage() {
 
           <div className="form-group">
             <label>Arrival Time optional</label>
-            <select defaultValue="10:00 AM - 12:00 PM">
+            <select
+              name="arrivalTime"
+              value={formData.arrivalTime}
+              onChange={handleChange}
+            >
               <option>10:00 AM - 12:00 PM</option>
               <option>12:00 PM - 2:00 PM</option>
               <option>2:00 PM - 4:00 PM</option>
@@ -67,12 +157,17 @@ function BookingDetailsPage() {
 
           <div className="form-group">
             <label>Special Requests</label>
-            <textarea placeholder="Please let us know if you have any special preferences." />
+            <textarea
+              name="specialRequests"
+              placeholder="Please let us know if you have any special preferences."
+              value={formData.specialRequests}
+              onChange={handleChange}
+            />
           </div>
 
-          <Link to="/booking/payment" className="confirm-booking-button">
+          <button type="submit" className="confirm-booking-button">
             Continue to Payment
-          </Link>
+          </button>
 
           <p className="terms-text">
             By continuing, you agree to our Terms & Conditions and Privacy Policy.

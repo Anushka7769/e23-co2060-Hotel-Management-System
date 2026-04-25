@@ -1,10 +1,83 @@
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { createBooking } from "../../services/bookingApi";
 import sampleHotels from "../../data/sampleHotels";
 import sampleRooms from "../../data/sampleRooms";
 
 function PaymentChoicePage() {
-  const hotel = sampleHotels[0];
-  const room = sampleRooms[0];
+  const navigate = useNavigate();
+
+  const fallbackHotel = sampleHotels[0];
+  const fallbackRoom = sampleRooms[0];
+
+  const [bookingDraft, setBookingDraft] = useState(null);
+  const [hotel, setHotel] = useState(fallbackHotel);
+  const [room, setRoom] = useState(fallbackRoom);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const savedDraft = localStorage.getItem("tourismhub_booking_draft");
+
+    if (!savedDraft) {
+      setError("Booking details were not found. Please complete booking details first.");
+      return;
+    }
+
+    const parsedDraft = JSON.parse(savedDraft);
+    setBookingDraft(parsedDraft);
+
+    setHotel({
+      ...fallbackHotel,
+      name: parsedDraft.display.hotelName,
+      area: parsedDraft.display.hotelArea,
+      city: parsedDraft.display.hotelCity,
+      image: parsedDraft.display.hotelImage,
+      verified: parsedDraft.display.hotelVerified,
+    });
+
+    setRoom({
+      ...fallbackRoom,
+      name: parsedDraft.display.roomName,
+      totalPrice: parsedDraft.booking.total_amount,
+    });
+  }, []);
+
+  async function handlePaymentChoice(paymentStatus) {
+    if (!bookingDraft) {
+      setError("Booking draft is missing. Please go back and enter booking details.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError("");
+
+      const response = await createBooking({
+        ...bookingDraft.booking,
+        payment_status: paymentStatus,
+      });
+
+      const completedBooking = {
+        ...bookingDraft,
+        booking_reference: response.data.booking_reference,
+        payment_status: paymentStatus,
+      };
+
+      localStorage.setItem(
+        "tourismhub_completed_booking",
+        JSON.stringify(completedBooking)
+      );
+
+      localStorage.removeItem("tourismhub_booking_draft");
+
+      navigate(`/booking/confirmation/${response.data.booking_reference}`);
+    } catch (err) {
+      setError("Could not create booking. Please check backend and try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <div className="payment-page">
@@ -17,9 +90,16 @@ function PaymentChoicePage() {
         <p>Select how you want to complete your reservation.</p>
       </section>
 
+      {error && <p className="form-note">{error}</p>}
+
       <div className="payment-layout">
         <section className="payment-options">
-          <Link to="/booking/confirmation/TH25861473" className="payment-card">
+          <button
+            type="button"
+            className="payment-card"
+            onClick={() => handlePaymentChoice("pending")}
+            disabled={isSubmitting}
+          >
             <div className="payment-icon">🏨</div>
             <div>
               <h2>Pay at Hotel</h2>
@@ -29,9 +109,14 @@ function PaymentChoicePage() {
               </p>
               <span className="recommended-badge">Recommended for MVP</span>
             </div>
-          </Link>
+          </button>
 
-          <Link to="/booking/confirmation/TH25861473" className="payment-card">
+          <button
+            type="button"
+            className="payment-card"
+            onClick={() => handlePaymentChoice("paid")}
+            disabled={isSubmitting}
+          >
             <div className="payment-icon">💳</div>
             <div>
               <h2>Mock Online Payment</h2>
@@ -41,7 +126,9 @@ function PaymentChoicePage() {
               </p>
               <span className="mock-badge">Demo only</span>
             </div>
-          </Link>
+          </button>
+
+          {isSubmitting && <p>Creating booking...</p>}
         </section>
 
         <aside className="booking-summary-card">
@@ -65,17 +152,24 @@ function PaymentChoicePage() {
 
           <div className="summary-line">
             <span>Dates</span>
-            <strong>May 18 - May 19</strong>
+            <strong>
+              {bookingDraft?.display?.dateText || "May 18 - May 19"}
+            </strong>
           </div>
 
           <div className="summary-line">
             <span>Guests</span>
-            <strong>2 adults · 1 room</strong>
+            <strong>
+              {bookingDraft?.display?.guestText || "2 adults · 1 room"}
+            </strong>
           </div>
 
           <div className="summary-total">
             <span>Total</span>
-            <strong>LKR {room.totalPrice.toLocaleString()}</strong>
+            <strong>
+              {bookingDraft?.display?.totalText ||
+                `LKR ${room.totalPrice.toLocaleString()}`}
+            </strong>
           </div>
         </aside>
       </div>
