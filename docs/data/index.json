@@ -1,0 +1,32 @@
+{
+    "team": [
+        {
+            "name": "W.L.I.Anushka",
+            "email": "e23016@eng.pdn.ac.lk",
+            "eNumber": "E/23/016"
+        },
+        {
+            "name": "K.A.A.I.Anusara",
+            "email": "e23015@eng.pdn.ac.lk",
+            "eNumber": "E/23/015"
+        },
+        {
+            "name": "R.M.K.S.Lakshani",
+            "email": "e23196@eng.pdn.ac.lk",
+            "eNumber": "E/23/196"
+        }
+    ],
+    "supervisors": [
+        {
+            "name": "Dr. Supervisor 1",
+            "email": "email@eng.pdn.ac.lk"
+        },
+        {
+            "name": "Supervisor 2",
+            "email": "email@eng.pdn.ac.lk"
+        }
+    ],
+    "tags": ["Web", "Software Systems", "CO2060"],
+    "image":"cover_page.jpg",
+    "thumbnail":"thumbnail.jpg"
+}
