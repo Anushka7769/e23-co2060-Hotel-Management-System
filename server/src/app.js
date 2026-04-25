@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const dbTestRoutes = require("./routes/dbTest.routes");
-
+const hotelRoutes = require("./routes/hotel.routes");
 const healthRoutes = require("./routes/health.routes");
 
 dotenv.config();
@@ -21,6 +21,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/health", healthRoutes);
 app.use("/api/db-test", dbTestRoutes);
+app.use("/api/hotels", hotelRoutes);
 
 const PORT = process.env.PORT || 5000;
 
