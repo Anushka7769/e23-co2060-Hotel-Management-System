@@ -12,6 +12,8 @@ import BookingDetailsPage from "../pages/public/BookingDetailsPage";
 import PaymentChoicePage from "../pages/public/PaymentChoicePage";
 import BookingConfirmationPage from "../pages/public/BookingConfirmationPage";
 import MyBookingsPage from "../pages/public/MyBookingsPage";
+import LoginPage from "../pages/public/LoginPage";
+import RegisterPage from "../pages/public/RegisterPage";
 import EventsPage from "../pages/public/EventsPage";
 import TransportPage from "../pages/public/TransportPage";
 
@@ -39,10 +41,23 @@ function AppRoutes() {
         <Route path="/hotels" element={<SearchResultsPage />} />
         <Route path="/hotels/:hotelId" element={<HotelDetailsPage />} />
         <Route path="/hotels/:hotelId/rooms" element={<RoomsAvailabilityPage />} />
+
+        {/* Tourist auth */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* Tourist booking flow */}
         <Route path="/booking/details" element={<BookingDetailsPage />} />
         <Route path="/booking/payment" element={<PaymentChoicePage />} />
-        <Route path="/booking/confirmation/:bookingRef" element={<BookingConfirmationPage />} />
+        <Route
+          path="/booking/confirmation/:bookingRef"
+          element={<BookingConfirmationPage />}
+        />
+
+        {/* My bookings */}
         <Route path="/account/bookings" element={<MyBookingsPage />} />
+        <Route path="/my-bookings" element={<MyBookingsPage />} />
+
         <Route path="/events" element={<EventsPage />} />
         <Route path="/transport" element={<TransportPage />} />
         <Route path="/partner" element={<PartnerLandingPage />} />
@@ -65,7 +80,10 @@ function AppRoutes() {
       {/* Admin dashboard */}
       <Route element={<AdminLayout />}>
         <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-        <Route path="/admin/hotels/:hotelId/approval" element={<HotelApprovalPage />} />
+        <Route
+          path="/admin/hotels/:hotelId/approval"
+          element={<HotelApprovalPage />}
+        />
         <Route path="/admin/listings" element={<ManageListingsPage />} />
         <Route path="/admin/complaints" element={<ComplaintsPage />} />
       </Route>
