@@ -7,6 +7,9 @@ const healthRoutes = require("./routes/health.routes");
 const roomRoutes = require("./routes/room.routes");
 const bookingRoutes = require("./routes/booking.routes");
 const partnerRoutes = require("./routes/partner.routes");
+const eventRoutes = require("./routes/event.routes");
+const diningRoutes = require("./routes/dining.routes");
+const complaintRoutes = require("./routes/complaint.routes");
 
 dotenv.config();
 
@@ -28,7 +31,9 @@ app.use("/api/hotels", hotelRoutes);
 app.use("/api/hotels/:hotelId/rooms", roomRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/partner", partnerRoutes);
-
+app.use("/api/partner/events", eventRoutes);
+app.use("/api/partner/dining", diningRoutes);
+app.use("/api/admin/complaints", complaintRoutes);
 
 const PORT = process.env.PORT || 5000;
 
