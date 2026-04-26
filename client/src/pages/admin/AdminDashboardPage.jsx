@@ -1,72 +1,114 @@
+import { useEffect, useState } from "react";
+import {
+  fetchAdminDashboard,
+  fetchPendingHotels,
+} from "../../services/adminApi";
+import { fetchAdminComplaints } from "../../services/partnerExtraApi";
+
 function AdminDashboardPage() {
-  const stats = [
-    {
-      title: "Total Users",
-      value: "12,450",
-      text: "8.5% increase this month",
-      icon: "👥",
-    },
-    {
-      title: "Total Hotels",
-      value: "1,235",
-      text: "Verified and pending hotels",
-      icon: "🏨",
-    },
-    {
-      title: "Total Bookings",
-      value: "8,907",
-      text: "1,250 bookings this month",
-      icon: "📘",
-    },
-  ];
+  const [stats, setStats] = useState([]);
+  const [pendingHotels, setPendingHotels] = useState([]);
+  const [complaints, setComplaints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const pendingHotels = [
-    {
-      id: 1,
-      name: "Blue Ocean Resort",
-      owner: "R. Perera",
-      submitted: "2 days ago",
-      status: "Pending",
-    },
-    {
-      id: 2,
-      name: "Kandy Lake View",
-      owner: "M. Fernando",
-      submitted: "1 week ago",
-      status: "Pending",
-    },
-    {
-      id: 3,
-      name: "Colombo City Hotel",
-      owner: "A. Wijesinghe",
-      submitted: "5 days ago",
-      status: "Pending",
-    },
-  ];
+  useEffect(() => {
+    async function loadAdminDashboard() {
+      try {
+        const [dashboardResponse, pendingHotelsResponse, complaintsResponse] =
+          await Promise.all([
+            fetchAdminDashboard(),
+            fetchPendingHotels(),
+            fetchAdminComplaints(),
+          ]);
 
-  const complaints = [
-    {
-      id: 1,
-      type: "Complaint",
-      subject: "Incorrect room info",
-      date: "Apr 21, 2026",
-      status: "Open",
-    },
-    {
-      id: 2,
-      type: "Report",
-      subject: "Fake review submitted",
-      date: "Apr 20, 2026",
-      status: "In Progress",
-    },
-    {
-      id: 3,
-      type: "Complaint",
-      subject: "Overbooking issue",
-      date: "Apr 19, 2026",
-      status: "Resolved",
-    },
-  ];
+        const dashboard = dashboardResponse.data;
+
+        setStats([
+          {
+            title: "Total Users",
+            value: dashboard.userStats.total_users || 0,
+            text: `${dashboard.userStats.tourists || 0} tourists, ${
+              dashboard.userStats.partners || 0
+            } partners`,
+            icon: "👥",
+          },
+          {
+            title: "Total Hotels",
+            value: dashboard.hotelStats.total_hotels || 0,
+            text: `${dashboard.hotelStats.approved_hotels || 0} approved, ${
+              dashboard.hotelStats.pending_hotels || 0
+            } pending`,
+            icon: "🏨",
+          },
+          {
+            title: "Total Bookings",
+            value: dashboard.bookingStats.total_bookings || 0,
+            text: `Revenue: LKR ${Number(
+              dashboard.bookingStats.total_revenue || 0
+            ).toLocaleString()}`,
+            icon: "📘",
+          },
+        ]);
+
+        const formattedHotels = pendingHotelsResponse.data.map((hotel) => ({
+          id: hotel.id,
+          name: hotel.name,
+          owner: hotel.partner_name,
+          submitted: formatDate(hotel.created_at),
+          status: formatStatus(hotel.status),
+        }));
+
+        setPendingHotels(formattedHotels);
+
+        const formattedComplaints = complaintsResponse.data.slice(0, 3).map((item) => ({
+          id: item.id,
+          type: formatComplaintType(item.complaint_type),
+          subject: item.subject,
+          date: formatDate(item.created_at),
+          status: formatComplaintStatus(item.status),
+        }));
+
+        setComplaints(formattedComplaints);
+      } catch (err) {
+        setError("Could not load admin dashboard from backend.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadAdminDashboard();
+  }, []);
+
+  function formatDate(dateValue) {
+    const date = new Date(dateValue);
+
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+
+  function formatStatus(status) {
+    if (status === "approved") return "Approved";
+    if (status === "rejected") return "Rejected";
+    return "Pending";
+  }
+
+  function formatComplaintType(type) {
+    if (type === "hotel_complaint") return "Complaint";
+    if (type === "review_report") return "Report";
+    if (type === "booking_issue") return "Booking Issue";
+    if (type === "fake_listing") return "Fake Listing";
+    return "Complaint";
+  }
+
+  function formatComplaintStatus(status) {
+    if (status === "resolved") return "Resolved";
+    if (status === "in_progress") return "In Progress";
+    return "Open";
+  }
 
   return (
     <div className="admin-dashboard-page">
@@ -78,6 +120,9 @@ function AdminDashboardPage() {
 
         <button className="partner-small-button">Save Changes</button>
       </div>
+
+      {loading && <p>Loading admin dashboard...</p>}
+      {error && <p className="form-note">{error}</p>}
 
       <section className="admin-stats-grid">
         {stats.map((stat) => (
@@ -114,23 +159,28 @@ function AdminDashboardPage() {
             </thead>
 
             <tbody>
-              {pendingHotels.map((hotel) => (
-                <tr key={hotel.id}>
-                  <td>{hotel.name}</td>
-                  <td>{hotel.owner}</td>
-                  <td>{hotel.submitted}</td>
-                  <td>
-                    <a
-                      href={`/admin/hotels/${hotel.id}/approval`}
-                      className="admin-review-link"
-                    >
-                      Review
-                    </a>
-                  </td>
-                </tr>
-              ))}
+              {!loading &&
+                pendingHotels.map((hotel) => (
+                  <tr key={hotel.id}>
+                    <td>{hotel.name}</td>
+                    <td>{hotel.owner}</td>
+                    <td>{hotel.submitted}</td>
+                    <td>
+                      <a
+                        href={`/admin/hotels/${hotel.id}/approval`}
+                        className="admin-review-link"
+                      >
+                        Review
+                      </a>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
+
+          {!loading && pendingHotels.length === 0 && (
+            <p>No pending hotels found.</p>
+          )}
         </div>
 
         <div className="admin-panel-card">
@@ -154,26 +204,27 @@ function AdminDashboardPage() {
             </thead>
 
             <tbody>
-              {complaints.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.type}</td>
-                  <td>{item.subject}</td>
-                  <td>{item.date}</td>
-                  <td>
-                    <span
-                      className={
-                        item.status === "Resolved"
-                          ? "table-status confirmed"
-                          : item.status === "In Progress"
-                          ? "table-status pending"
-                          : "table-status cancelled"
-                      }
-                    >
-                      {item.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {!loading &&
+                complaints.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.type}</td>
+                    <td>{item.subject}</td>
+                    <td>{item.date}</td>
+                    <td>
+                      <span
+                        className={
+                          item.status === "Resolved"
+                            ? "table-status confirmed"
+                            : item.status === "In Progress"
+                            ? "table-status pending"
+                            : "table-status cancelled"
+                        }
+                      >
+                        {item.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
