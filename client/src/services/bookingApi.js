@@ -1,6 +1,18 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
+export async function fetchBookings() {
+  const response = await fetch(`${API_BASE_URL}/bookings`);
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to fetch bookings");
+  }
+
+  return data;
+}
+
 export async function createBooking(bookingData) {
   const response = await fetch(`${API_BASE_URL}/bookings`, {
     method: "POST",
@@ -31,13 +43,13 @@ export async function getBookingsByTouristId(touristId) {
   return data;
 }
 
-export async function getBookingById(bookingId) {
-  const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}`);
+export async function getBookingByReference(bookingRef) {
+  const response = await fetch(`${API_BASE_URL}/bookings/reference/${bookingRef}`);
 
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || "Failed to fetch booking details");
+    throw new Error(data.message || "Failed to fetch booking by reference");
   }
 
   return data;

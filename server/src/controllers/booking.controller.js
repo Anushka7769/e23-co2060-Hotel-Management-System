@@ -1,6 +1,7 @@
 const {
   getAllBookings,
   getBookingById,
+  getBookingByReference,
   getBookingsByTouristId,
   createBooking,
 } = require("../models/booking.model");
@@ -65,6 +66,30 @@ async function getBookingDetails(req, res) {
   }
 }
 
+async function getBookingDetailsByReference(req, res) {
+  try {
+    const booking = await getBookingByReference(req.params.bookingRef);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: booking,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch booking by reference",
+      error: error.message,
+    });
+  }
+}
+
 async function addBooking(req, res) {
   try {
     const requiredFields = [
@@ -106,5 +131,6 @@ module.exports = {
   listBookings,
   listBookingsByTourist,
   getBookingDetails,
+  getBookingDetailsByReference,
   addBooking,
 };
