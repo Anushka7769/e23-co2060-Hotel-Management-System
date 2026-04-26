@@ -1,52 +1,112 @@
-function PartnerDashboardPage() {
-  const stats = [
-    { title: "New Bookings", value: "12", text: "4 upcoming", icon: "📅" },
-    { title: "Today Check-ins", value: "14", text: "5 remaining", icon: "✅" },
-    { title: "Today Check-outs", value: "8", text: "All scheduled", icon: "🚪" },
-    { title: "Average Rating", value: "8.8", text: "Very good", icon: "⭐" },
-  ];
+import { useEffect, useState } from "react";
+import {
+  fetchPartnerDashboard,
+  fetchPartnerBookings,
+} from "../../services/partnerApi";
 
-  const latestBookings = [
-    {
-      id: "BKG-15782",
-      guest: "Mohammed S.",
-      room: "Deluxe Suite",
-      dates: "May 4 - May 6",
-      status: "Confirmed",
-    },
-    {
-      id: "BKG-15780",
-      guest: "Sarah M.",
-      room: "Standard Room",
-      dates: "May 5 - May 7",
-      status: "Confirmed",
-    },
-    {
-      id: "BKG-15743",
-      guest: "Jessica L.",
-      room: "Deluxe Suite",
-      dates: "May 6 - May 8",
-      status: "Pending",
-    },
-    {
-      id: "BKG-15701",
-      guest: "Tom & Jane W.",
-      room: "Family Room",
-      dates: "May 6 - May 10",
-      status: "Cancelled",
-    },
-  ];
+function PartnerDashboardPage() {
+  const [stats, setStats] = useState([]);
+  const [latestBookings, setLatestBookings] = useState([]);
+  const [hotelName, setHotelName] = useState("Partner");
+  const [availabilityAlert, setAvailabilityAlert] = useState("Checking room availability...");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadPartnerDashboard() {
+      try {
+        const [dashboardResponse, bookingsResponse] = await Promise.all([
+          fetchPartnerDashboard(1),
+          fetchPartnerBookings(1),
+        ]);
+
+        const dashboard = dashboardResponse.data;
+        const bookings = bookingsResponse.data;
+
+        setHotelName(dashboard.hotel?.name || "Partner");
+
+        setStats([
+          {
+            title: "Total Bookings",
+            value: dashboard.bookingStats.total_bookings || 0,
+            text: `${dashboard.bookingStats.confirmed_bookings || 0} confirmed`,
+            icon: "📅",
+          },
+          {
+            title: "Paid Bookings",
+            value: dashboard.bookingStats.paid_bookings || 0,
+            text: "Payments completed",
+            icon: "✅",
+          },
+          {
+            title: "Available Rooms",
+            value: dashboard.roomStats.available_rooms || 0,
+            text: `${dashboard.roomStats.total_rooms || 0} total rooms`,
+            icon: "🚪",
+          },
+          {
+            title: "Total Revenue",
+            value: `LKR ${Number(dashboard.bookingStats.total_revenue || 0).toLocaleString()}`,
+            text: "From bookings",
+            icon: "⭐",
+          },
+        ]);
+
+        setAvailabilityAlert(
+          `${dashboard.roomStats.available_rooms || 0} rooms available from ${dashboard.roomStats.total_rooms || 0} total rooms.`
+        );
+
+        const formattedBookings = bookings.slice(0, 5).map((booking) => ({
+          id: booking.booking_reference,
+          guest: booking.guest_name,
+          room: booking.room_type,
+          dates: formatDateRange(booking.check_in, booking.check_out),
+          status: formatStatus(booking.booking_status),
+        }));
+
+        setLatestBookings(formattedBookings);
+      } catch (err) {
+        setError("Could not load partner dashboard from backend.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadPartnerDashboard();
+  }, []);
+
+  function formatDateRange(checkIn, checkOut) {
+    const startDate = new Date(checkIn);
+    const endDate = new Date(checkOut);
+
+    const options = {
+      month: "short",
+      day: "numeric",
+    };
+
+    return `${startDate.toLocaleDateString("en-US", options)} - ${endDate.toLocaleDateString("en-US", options)}`;
+  }
+
+  function formatStatus(status) {
+    if (status === "confirmed") return "Confirmed";
+    if (status === "cancelled") return "Cancelled";
+    if (status === "completed") return "Completed";
+    return "Pending";
+  }
 
   return (
     <div className="partner-dashboard-page">
       <div className="dashboard-top-row">
         <div>
-          <h1>Welcome back, Partner!</h1>
+          <h1>Welcome back, {hotelName}!</h1>
           <p>Here’s what is happening with your hotel today.</p>
         </div>
 
         <button className="partner-small-button">View Reports</button>
       </div>
+
+      {loading && <p>Loading partner dashboard...</p>}
+      {error && <p className="form-note">{error}</p>}
 
       <section className="partner-stats-grid">
         {stats.map((item) => (
@@ -64,7 +124,7 @@ function PartnerDashboardPage() {
       <section className="partner-alert-card">
         <div>
           <h3>Availability Alert</h3>
-          <p>2 rooms need attention for this weekend.</p>
+          <p>{availabilityAlert}</p>
         </div>
         <button className="partner-small-button">Manage Rooms</button>
       </section>
@@ -96,7 +156,7 @@ function PartnerDashboardPage() {
           </thead>
 
           <tbody>
-            {latestBookings.map((booking) => (
+            {!loading && latestBookings.map((booking) => (
               <tr key={booking.id}>
                 <td>{booking.id}</td>
                 <td>{booking.guest}</td>
@@ -111,6 +171,10 @@ function PartnerDashboardPage() {
             ))}
           </tbody>
         </table>
+
+        {!loading && latestBookings.length === 0 && (
+          <p>No bookings found for this hotel.</p>
+        )}
       </section>
     </div>
   );
