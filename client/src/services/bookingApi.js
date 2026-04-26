@@ -1,4 +1,5 @@
-import API_BASE_URL from "./api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 export async function createBooking(bookingData) {
   const response = await fetch(`${API_BASE_URL}/bookings`, {
@@ -9,29 +10,35 @@ export async function createBooking(bookingData) {
     body: JSON.stringify(bookingData),
   });
 
+  const data = await response.json();
+
   if (!response.ok) {
-    throw new Error("Failed to create booking");
+    throw new Error(data.message || "Failed to create booking");
   }
 
-  return response.json();
+  return data;
 }
 
-export async function fetchBookings() {
-  const response = await fetch(`${API_BASE_URL}/bookings`);
+export async function getBookingsByTouristId(touristId) {
+  const response = await fetch(`${API_BASE_URL}/bookings/user/${touristId}`);
+
+  const data = await response.json();
 
   if (!response.ok) {
-    throw new Error("Failed to fetch bookings");
+    throw new Error(data.message || "Failed to fetch tourist bookings");
   }
 
-  return response.json();
+  return data;
 }
 
-export async function fetchBookingById(id) {
-  const response = await fetch(`${API_BASE_URL}/bookings/${id}`);
+export async function getBookingById(bookingId) {
+  const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}`);
+
+  const data = await response.json();
 
   if (!response.ok) {
-    throw new Error("Failed to fetch booking details");
+    throw new Error(data.message || "Failed to fetch booking details");
   }
 
-  return response.json();
+  return data;
 }

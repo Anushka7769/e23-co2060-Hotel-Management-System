@@ -1,13 +1,25 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import sampleHotels from "../../data/sampleHotels";
 import sampleRooms from "../../data/sampleRooms";
+import { useAuth } from "../../context/AuthContext";
 
 function BookingDetailsPage() {
   const navigate = useNavigate();
+  const { user, isLoggedIn } = useAuth();
 
-  const hotel = sampleHotels[0];
-  const room = sampleRooms[0];
+  const savedHotel = JSON.parse(
+    localStorage.getItem("tourismhub_selected_hotel") || "null"
+  );
+
+  const savedRoom = JSON.parse(
+    localStorage.getItem("tourismhub_selected_room") || "null"
+  );
+
+  const hotel = savedHotel || sampleHotels[0];
+  const room = savedRoom || sampleRooms[0];
+
+  const splitName = user?.full_name ? user.full_name.split(" ") : [];
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -18,6 +30,22 @@ function BookingDetailsPage() {
     arrivalTime: "10:00 AM - 12:00 PM",
     specialRequests: "",
   });
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      alert("Please login before booking a room.");
+      navigate("/login");
+      return;
+    }
+
+    setFormData((currentData) => ({
+      ...currentData,
+      firstName: splitName[0] || "",
+      lastName: splitName.slice(1).join(" ") || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+    }));
+  }, [isLoggedIn, navigate, user]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -31,16 +59,22 @@ function BookingDetailsPage() {
   function handleSubmit(event) {
     event.preventDefault();
 
+    if (!isLoggedIn || !user?.id) {
+      alert("Please login before continuing your booking.");
+      navigate("/login");
+      return;
+    }
+
     const bookingDraft = {
       guest: formData,
       booking: {
-        tourist_id: 3,
-        hotel_id: 1,
-        room_id: 1,
-        check_in: "2026-05-18",
-        check_out: "2026-05-19",
-        guests: 2,
-        total_amount: room.totalPrice,
+        tourist_id: user.id,
+        hotel_id: hotel.id || 1,
+        room_id: room.id || 1,
+        check_in: localStorage.getItem("tourismhub_check_in") || "2026-05-18",
+        check_out: localStorage.getItem("tourismhub_check_out") || "2026-05-19",
+        guests: Number(localStorage.getItem("tourismhub_guests")) || 2,
+        total_amount: room.totalPrice || room.price || 0,
       },
       display: {
         hotelName: hotel.name,
@@ -48,14 +82,17 @@ function BookingDetailsPage() {
         hotelCity: hotel.city,
         hotelImage: hotel.image,
         hotelVerified: hotel.verified,
-        roomName: room.name,
-        dateText: "May 18 - May 19",
-        guestText: "2 adults · 1 room",
-        totalText: `LKR ${room.totalPrice.toLocaleString()}`,
+        roomName: room.name || room.room_type || "Selected Room",
+        dateText: localStorage.getItem("tourismhub_date_text") || "May 18 - May 19",
+        guestText: localStorage.getItem("tourismhub_guest_text") || "2 adults · 1 room",
+        totalText: `LKR ${(room.totalPrice || room.price || 0).toLocaleString()}`,
       },
     };
 
-    localStorage.setItem("tourismhub_booking_draft", JSON.stringify(bookingDraft));
+    localStorage.setItem(
+      "tourismhub_booking_draft",
+      JSON.stringify(bookingDraft)
+    );
 
     navigate("/booking/payment");
   }
@@ -63,12 +100,14 @@ function BookingDetailsPage() {
   return (
     <div className="booking-page">
       <div className="breadcrumb">
-        Home / Kandy / {hotel.name} / Booking Details
+        Home / {hotel.city || "Sri Lanka"} / {hotel.name} / Booking Details
       </div>
 
       <section className="booking-header">
         <h1>Review your details</h1>
-        <p>Almost done. Fill in your guest details to complete your booking.</p>
+        <p>
+          Almost done. Your account details are auto-filled for faster booking.
+        </p>
       </section>
 
       <div className="booking-layout">
@@ -182,7 +221,9 @@ function BookingDetailsPage() {
           <div className="summary-title-row">
             <div>
               <h3>{hotel.name}</h3>
-              <p>{hotel.area}, {hotel.city}</p>
+              <p>
+                {hotel.area}, {hotel.city}
+              </p>
             </div>
 
             {hotel.verified && <span className="verified-badge">Verified</span>}
@@ -190,22 +231,28 @@ function BookingDetailsPage() {
 
           <div className="summary-line">
             <span>Room</span>
-            <strong>{room.name}</strong>
+            <strong>{room.name || room.room_type || "Selected Room"}</strong>
           </div>
 
           <div className="summary-line">
             <span>Dates</span>
-            <strong>May 18 - May 19</strong>
+            <strong>
+              {localStorage.getItem("tourismhub_date_text") || "May 18 - May 19"}
+            </strong>
           </div>
 
           <div className="summary-line">
             <span>Guests</span>
-            <strong>2 adults · 1 room</strong>
+            <strong>
+              {localStorage.getItem("tourismhub_guest_text") || "2 adults · 1 room"}
+            </strong>
           </div>
 
           <div className="summary-line">
             <span>Room price</span>
-            <strong>LKR {room.totalPrice.toLocaleString()}</strong>
+            <strong>
+              LKR {(room.totalPrice || room.price || 0).toLocaleString()}
+            </strong>
           </div>
 
           <div className="summary-line">
@@ -215,11 +262,14 @@ function BookingDetailsPage() {
 
           <div className="summary-total">
             <span>Total</span>
-            <strong>LKR {room.totalPrice.toLocaleString()}</strong>
+            <strong>
+              LKR {(room.totalPrice || room.price || 0).toLocaleString()}
+            </strong>
           </div>
 
           <div className="policy-note">
-            Free cancellation until May 16. After that, cancellation charges may apply.
+            Free cancellation until May 16. After that, cancellation charges may
+            apply.
           </div>
         </aside>
       </div>
