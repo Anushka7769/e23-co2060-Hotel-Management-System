@@ -14,6 +14,9 @@ async function getAllBookings() {
       b.created_at,
       u.full_name AS tourist_name,
       h.name AS hotel_name,
+      h.address AS hotel_area,
+      h.city AS hotel_city,
+      h.is_verified AS hotel_verified,
       r.room_type
     FROM bookings b
     JOIN users u ON b.tourist_id = u.id
@@ -43,6 +46,9 @@ async function getBookingById(id) {
       b.created_at,
       u.full_name AS tourist_name,
       h.name AS hotel_name,
+      h.address AS hotel_area,
+      h.city AS hotel_city,
+      h.is_verified AS hotel_verified,
       r.room_type
     FROM bookings b
     JOIN users u ON b.tourist_id = u.id
@@ -51,6 +57,40 @@ async function getBookingById(id) {
     WHERE b.id = ?
     `,
     [id]
+  );
+
+  return rows[0];
+}
+
+async function getBookingByReference(bookingRef) {
+  const [rows] = await pool.query(
+    `
+    SELECT
+      b.id,
+      b.booking_reference,
+      b.tourist_id,
+      b.hotel_id,
+      b.room_id,
+      b.check_in,
+      b.check_out,
+      b.guests,
+      b.total_amount,
+      b.payment_status,
+      b.booking_status,
+      b.created_at,
+      u.full_name AS tourist_name,
+      h.name AS hotel_name,
+      h.address AS hotel_area,
+      h.city AS hotel_city,
+      h.is_verified AS hotel_verified,
+      r.room_type
+    FROM bookings b
+    JOIN users u ON b.tourist_id = u.id
+    JOIN hotels h ON b.hotel_id = h.id
+    JOIN rooms r ON b.room_id = r.id
+    WHERE b.booking_reference = ?
+    `,
+    [bookingRef]
   );
 
   return rows[0];
@@ -74,6 +114,9 @@ async function getBookingsByTouristId(touristId) {
       b.created_at,
       u.full_name AS tourist_name,
       h.name AS hotel_name,
+      h.address AS hotel_area,
+      h.city AS hotel_city,
+      h.is_verified AS hotel_verified,
       r.room_type
     FROM bookings b
     JOIN users u ON b.tourist_id = u.id
@@ -142,6 +185,7 @@ async function createBooking(bookingData) {
 module.exports = {
   getAllBookings,
   getBookingById,
+  getBookingByReference,
   getBookingsByTouristId,
   createBooking,
 };
