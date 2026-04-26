@@ -56,6 +56,38 @@ async function getBookingById(id) {
   return rows[0];
 }
 
+async function getBookingsByTouristId(touristId) {
+  const [rows] = await pool.query(
+    `
+    SELECT
+      b.id,
+      b.booking_reference,
+      b.tourist_id,
+      b.hotel_id,
+      b.room_id,
+      b.check_in,
+      b.check_out,
+      b.guests,
+      b.total_amount,
+      b.payment_status,
+      b.booking_status,
+      b.created_at,
+      u.full_name AS tourist_name,
+      h.name AS hotel_name,
+      r.room_type
+    FROM bookings b
+    JOIN users u ON b.tourist_id = u.id
+    JOIN hotels h ON b.hotel_id = h.id
+    JOIN rooms r ON b.room_id = r.id
+    WHERE b.tourist_id = ?
+    ORDER BY b.created_at DESC
+    `,
+    [touristId]
+  );
+
+  return rows;
+}
+
 async function createBooking(bookingData) {
   const {
     tourist_id,
@@ -110,5 +142,6 @@ async function createBooking(bookingData) {
 module.exports = {
   getAllBookings,
   getBookingById,
+  getBookingsByTouristId,
   createBooking,
 };

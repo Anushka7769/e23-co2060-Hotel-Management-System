@@ -1,6 +1,7 @@
 const {
   getAllBookings,
   getBookingById,
+  getBookingsByTouristId,
   createBooking,
 } = require("../models/booking.model");
 
@@ -17,6 +18,24 @@ async function listBookings(req, res) {
     res.status(500).json({
       success: false,
       message: "Failed to fetch bookings",
+      error: error.message,
+    });
+  }
+}
+
+async function listBookingsByTourist(req, res) {
+  try {
+    const bookings = await getBookingsByTouristId(req.params.touristId);
+
+    res.status(200).json({
+      success: true,
+      count: bookings.length,
+      data: bookings,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch tourist bookings",
       error: error.message,
     });
   }
@@ -85,6 +104,7 @@ async function addBooking(req, res) {
 
 module.exports = {
   listBookings,
+  listBookingsByTourist,
   getBookingDetails,
   addBooking,
 };
