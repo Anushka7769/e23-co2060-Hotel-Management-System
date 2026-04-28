@@ -6,6 +6,7 @@ import {
 } from "../../services/bookingApi";
 import { useAuth } from "../../context/AuthContext";
 import sampleBookings from "../../data/sampleBookings";
+import { downloadInvoice } from "../../utils/downloadInvoice";
 
 function MyBookingsPage() {
   const navigate = useNavigate();
@@ -199,7 +200,11 @@ function MyBookingsPage() {
                   View Booking
                 </Link>
 
-                <button type="button" className="invoice-outline-button">
+                <button
+                  type="button"
+                  className="invoice-outline-button"
+                  onClick={() => downloadInvoice(booking)}
+                >
                   Download Invoice
                 </button>
 
