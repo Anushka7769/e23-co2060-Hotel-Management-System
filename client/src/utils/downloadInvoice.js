@@ -4,13 +4,15 @@ export function downloadInvoice(booking) {
   const doc = new jsPDF();
 
   const invoiceNumber = booking.bookingRef;
-  const fileName = `invoice-${invoiceNumber}.pdf`;
+  const isCancelled = booking.bookingStatus === "cancelled";
 
-  // Header background
-  doc.setFillColor(5, 150, 105);
+  const fileName = isCancelled
+    ? `cancellation-record-${invoiceNumber}.pdf`
+    : `invoice-${invoiceNumber}.pdf`;
+
+  doc.setFillColor(isCancelled ? 220 : 5, isCancelled ? 38 : 150, isCancelled ? 38 : 105);
   doc.rect(0, 0, 210, 32, "F");
 
-  // Header title
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
@@ -18,21 +20,18 @@ export function downloadInvoice(booking) {
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text("Booking Invoice", 14, 26);
+  doc.text(isCancelled ? "Cancellation Record" : "Booking Invoice", 14, 26);
 
-  // Invoice title
   doc.setTextColor(15, 23, 42);
   doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("INVOICE", 150, 50);
+  doc.text(isCancelled ? "CANCELLED" : "INVOICE", isCancelled ? 136 : 150, 50);
 
-  // Invoice meta
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text(`Invoice No: ${invoiceNumber}`, 14, 48);
+  doc.text(`Reference No: ${invoiceNumber}`, 14, 48);
   doc.text(`Generated Date: ${new Date().toLocaleDateString()}`, 14, 56);
 
-  // Booking information box
   doc.setDrawColor(226, 232, 240);
   doc.setFillColor(248, 250, 252);
   doc.roundedRect(14, 70, 182, 78, 4, 4, "FD");
@@ -90,38 +89,34 @@ export function downloadInvoice(booking) {
   doc.setFont("helvetica", "normal");
   doc.text(String(booking.paymentStatus), 60, y);
 
-  // Total amount section
-  doc.setFillColor(239, 246, 255);
+  doc.setFillColor(isCancelled ? 254 : 239, isCancelled ? 226 : 246, isCancelled ? 226 : 255);
   doc.roundedRect(14, 160, 182, 28, 4, 4, "F");
 
-  doc.setTextColor(30, 64, 175);
+  doc.setTextColor(isCancelled ? 153 : 30, isCancelled ? 27 : 64, isCancelled ? 27 : 175);
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text("Total Amount", 22, 178);
+  doc.text(isCancelled ? "Cancelled Booking Amount" : "Total Amount", 22, 178);
 
   doc.setFontSize(18);
   doc.text(`LKR ${Number(booking.total).toLocaleString()}`, 145, 178);
 
-  // Status note
   doc.setTextColor(71, 85, 105);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
 
-  const statusNote =
-    booking.bookingStatus === "cancelled"
-      ? "Note: This booking has been cancelled."
-      : "Note: Please present this invoice during hotel check-in.";
+  const statusNote = isCancelled
+    ? "Note: This booking has been cancelled. This document is a cancellation record."
+    : "Note: Please present this invoice during hotel check-in.";
 
   doc.text(statusNote, 14, 204);
 
-  // Footer
   doc.setDrawColor(226, 232, 240);
   doc.line(14, 260, 196, 260);
 
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(9);
   doc.text("Thank you for using TourismHub LK.", 14, 270);
-  doc.text("This invoice was generated electronically.", 14, 276);
+  doc.text("This document was generated electronically.", 14, 276);
 
   doc.save(fileName);
 }

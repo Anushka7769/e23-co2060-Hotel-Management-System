@@ -13,6 +13,7 @@ function MyBookingsPage() {
   const { user, isLoggedIn } = useAuth();
 
   const [bookings, setBookings] = useState([]);
+  const [activeTab, setActiveTab] = useState("upcoming");
   const [loading, setLoading] = useState(true);
   const [cancelLoadingId, setCancelLoadingId] = useState(null);
   const [error, setError] = useState("");
@@ -98,12 +99,40 @@ function MyBookingsPage() {
       await cancelBookingById(bookingId);
       await loadBookings();
 
+      setActiveTab("cancelled");
       alert("Booking cancelled successfully.");
     } catch (err) {
       setError("Could not cancel booking. Please try again.");
     } finally {
       setCancelLoadingId(null);
     }
+  }
+
+  const upcomingBookings = bookings.filter(
+    (booking) => booking.bookingStatus !== "cancelled"
+  );
+
+  const cancelledBookings = bookings.filter(
+    (booking) => booking.bookingStatus === "cancelled"
+  );
+
+  const filteredBookings =
+    activeTab === "upcoming"
+      ? upcomingBookings
+      : activeTab === "cancelled"
+      ? cancelledBookings
+      : bookings;
+
+  function getEmptyMessage() {
+    if (activeTab === "upcoming") {
+      return "You do not have any upcoming bookings.";
+    }
+
+    if (activeTab === "cancelled") {
+      return "You do not have any cancelled bookings.";
+    }
+
+    return "You do not have any bookings yet.";
   }
 
   return (
@@ -118,30 +147,51 @@ function MyBookingsPage() {
       </section>
 
       <div className="dashboard-tabs">
-        <button className="active">Upcoming Bookings</button>
-        <button>Past Bookings</button>
-        <button>Saved Hotels</button>
-        <button>Reviews</button>
+        <button
+          type="button"
+          className={activeTab === "upcoming" ? "active" : ""}
+          onClick={() => setActiveTab("upcoming")}
+        >
+          Upcoming Bookings ({upcomingBookings.length})
+        </button>
+
+        <button
+          type="button"
+          className={activeTab === "cancelled" ? "active" : ""}
+          onClick={() => setActiveTab("cancelled")}
+        >
+          Cancelled Bookings ({cancelledBookings.length})
+        </button>
+
+        <button
+          type="button"
+          className={activeTab === "all" ? "active" : ""}
+          onClick={() => setActiveTab("all")}
+        >
+          All Bookings ({bookings.length})
+        </button>
       </div>
 
       <div className="booking-alert">
-        Here are your bookings. You can view details, download invoices, or
-        cancel if allowed.
+        Cancelled bookings are kept as history records for customer reference
+        and future reporting.
       </div>
 
       {loading && <p>Loading bookings...</p>}
       {error && <p className="form-note">{error}</p>}
 
-      {!loading && bookings.length === 0 && !error && (
+      {!loading && filteredBookings.length === 0 && !error && (
         <div className="booking-alert">
-          You do not have any bookings yet.{" "}
-          <Link to="/hotels">Explore hotels</Link> to make your first booking.
+          {getEmptyMessage()}{" "}
+          {activeTab !== "cancelled" && (
+            <Link to="/hotels">Explore hotels</Link>
+          )}
         </div>
       )}
 
       <section className="user-booking-list">
         {!loading &&
-          bookings.map((booking) => (
+          filteredBookings.map((booking) => (
             <div className="user-booking-card" key={booking.id}>
               <img src={booking.hotel.image} alt={booking.hotel.name} />
 
@@ -205,7 +255,9 @@ function MyBookingsPage() {
                   className="invoice-outline-button"
                   onClick={() => downloadInvoice(booking)}
                 >
-                  Download Invoice
+                  {booking.bookingStatus === "cancelled"
+                    ? "Download Cancellation Record"
+                    : "Download Invoice"}
                 </button>
 
                 {booking.bookingStatus !== "cancelled" && (
