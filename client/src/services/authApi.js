@@ -13,7 +13,7 @@ export async function registerTourist(formData) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || "Registration failed");
+    throw new Error(data.error || data.message || "Registration failed");
   }
 
   return data;
@@ -31,7 +31,7 @@ export async function loginTourist(formData) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || "Login failed");
+    throw new Error(data.error || data.message || "Login failed");
   }
 
   return data;
