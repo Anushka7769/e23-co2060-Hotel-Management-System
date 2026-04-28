@@ -1,6 +1,9 @@
 const {
   getAllBookings,
   getBookingById,
+  getBookingByReference,
+  getBookingsByTouristId,
+  cancelBookingById,
   createBooking,
 } = require("../models/booking.model");
 
@@ -17,6 +20,24 @@ async function listBookings(req, res) {
     res.status(500).json({
       success: false,
       message: "Failed to fetch bookings",
+      error: error.message,
+    });
+  }
+}
+
+async function listBookingsByTourist(req, res) {
+  try {
+    const bookings = await getBookingsByTouristId(req.params.touristId);
+
+    res.status(200).json({
+      success: true,
+      count: bookings.length,
+      data: bookings,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch tourist bookings",
       error: error.message,
     });
   }
@@ -41,6 +62,54 @@ async function getBookingDetails(req, res) {
     res.status(500).json({
       success: false,
       message: "Failed to fetch booking details",
+      error: error.message,
+    });
+  }
+}
+
+async function getBookingDetailsByReference(req, res) {
+  try {
+    const booking = await getBookingByReference(req.params.bookingRef);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: booking,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch booking by reference",
+      error: error.message,
+    });
+  }
+}
+
+async function cancelBooking(req, res) {
+  try {
+    const isCancelled = await cancelBookingById(req.params.id);
+
+    if (!isCancelled) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Booking cancelled successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to cancel booking",
       error: error.message,
     });
   }
@@ -85,6 +154,9 @@ async function addBooking(req, res) {
 
 module.exports = {
   listBookings,
+  listBookingsByTourist,
   getBookingDetails,
+  getBookingDetailsByReference,
+  cancelBooking,
   addBooking,
 };

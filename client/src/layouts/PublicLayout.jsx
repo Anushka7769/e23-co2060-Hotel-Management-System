@@ -1,18 +1,74 @@
 import { Link, Outlet } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function PublicLayout() {
+  const { user, isLoggedIn, logout } = useAuth();
+
+  const handleLogout = () => {
+    const confirmLogout = window.confirm("Are you sure you want to logout?");
+
+    if (confirmLogout) {
+      logout();
+    }
+  };
+
   return (
     <div>
       <header style={styles.header}>
-        <div style={styles.logo}>🌴 TourismHub LK</div>
+        <Link to="/" style={styles.logo}>
+          🌴 TourismHub LK
+        </Link>
 
         <nav style={styles.nav}>
-          <Link to="/" style={styles.link}>Home</Link>
-          <Link to="/hotels" style={styles.link}>Hotels</Link>
-          <Link to="/events" style={styles.link}>Events</Link>
-          <Link to="/transport" style={styles.link}>Transport</Link>
-          <Link to="/partner" style={styles.link}>List your property</Link>
-          <Link to="/account/bookings" style={styles.button}>My Account</Link>
+          <Link to="/" style={styles.link}>
+            Home
+          </Link>
+
+          <Link to="/hotels" style={styles.link}>
+            Hotels
+          </Link>
+
+          <Link to="/events" style={styles.link}>
+            Events
+          </Link>
+
+          <Link to="/transport" style={styles.link}>
+            Transport
+          </Link>
+
+          <Link to="/partner" style={styles.link}>
+            List your property
+          </Link>
+
+          {isLoggedIn ? (
+            <>
+              <Link to="/account/bookings" style={styles.link}>
+                My Bookings
+              </Link>
+
+              <span style={styles.userText}>
+                Hi, {user?.full_name?.split(" ")[0] || "User"}
+              </span>
+
+              <button
+                type="button"
+                style={styles.logoutButton}
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" style={styles.link}>
+                Login
+              </Link>
+
+              <Link to="/register" style={styles.button}>
+                Register
+              </Link>
+            </>
+          )}
         </nav>
       </header>
 
@@ -37,6 +93,7 @@ const styles = {
     fontSize: "22px",
     fontWeight: "700",
     color: "#0f766e",
+    textDecoration: "none",
   },
   nav: {
     display: "flex",
@@ -55,6 +112,19 @@ const styles = {
     padding: "8px 14px",
     borderRadius: "8px",
     fontWeight: "600",
+  },
+  logoutButton: {
+    border: "none",
+    background: "#dc2626",
+    color: "white",
+    padding: "8px 14px",
+    borderRadius: "8px",
+    fontWeight: "600",
+    cursor: "pointer",
+  },
+  userText: {
+    color: "#0f766e",
+    fontWeight: "700",
   },
   main: {
     padding: "0 40px 40px",
