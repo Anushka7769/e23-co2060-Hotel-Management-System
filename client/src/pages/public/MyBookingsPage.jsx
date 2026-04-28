@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getBookingsByTouristId } from "../../services/bookingApi";
+import {
+  cancelBookingById,
+  getBookingsByTouristId,
+} from "../../services/bookingApi";
 import { useAuth } from "../../context/AuthContext";
 import sampleBookings from "../../data/sampleBookings";
 
@@ -10,6 +13,7 @@ function MyBookingsPage() {
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cancelLoadingId, setCancelLoadingId] = useState(null);
   const [error, setError] = useState("");
 
   function formatDateRange(checkIn, checkOut) {
@@ -27,6 +31,46 @@ function MyBookingsPage() {
     )} - ${endDate.toLocaleDateString("en-US", options)}`;
   }
 
+  function mapBookingData(apiBookings) {
+    return apiBookings.map((booking, index) => {
+      const fallbackBooking = sampleBookings[index] || sampleBookings[0];
+
+      return {
+        id: booking.id,
+        bookingRef: booking.booking_reference,
+        dates: formatDateRange(booking.check_in, booking.check_out),
+        guests: `${booking.guests} guest${booking.guests > 1 ? "s" : ""}`,
+        paymentStatus:
+          booking.payment_status === "paid" ? "Paid" : "Pending Payment",
+        bookingStatus: booking.booking_status,
+        total: Number(booking.total_amount),
+        hotel: {
+          ...fallbackBooking.hotel,
+          name: booking.hotel_name,
+        },
+        room: {
+          ...fallbackBooking.room,
+          name: booking.room_type,
+        },
+      };
+    });
+  }
+
+  async function loadBookings() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await getBookingsByTouristId(user.id);
+      setBookings(mapBookingData(response.data));
+    } catch (err) {
+      setError("Could not load your bookings from backend.");
+      setBookings([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (!isLoggedIn || !user?.id) {
       alert("Please login to view your bookings.");
@@ -34,47 +78,32 @@ function MyBookingsPage() {
       return;
     }
 
-    async function loadBookings() {
-      try {
-        setLoading(true);
-        setError("");
-
-        const response = await getBookingsByTouristId(user.id);
-
-        const bookingsFromApi = response.data.map((booking, index) => {
-          const fallbackBooking = sampleBookings[index] || sampleBookings[0];
-
-          return {
-            id: booking.id,
-            bookingRef: booking.booking_reference,
-            dates: formatDateRange(booking.check_in, booking.check_out),
-            guests: `${booking.guests} guest${booking.guests > 1 ? "s" : ""}`,
-            paymentStatus:
-              booking.payment_status === "paid" ? "Paid" : "Pending Payment",
-            bookingStatus: booking.booking_status,
-            total: Number(booking.total_amount),
-            hotel: {
-              ...fallbackBooking.hotel,
-              name: booking.hotel_name,
-            },
-            room: {
-              ...fallbackBooking.room,
-              name: booking.room_type,
-            },
-          };
-        });
-
-        setBookings(bookingsFromApi);
-      } catch (err) {
-        setError("Could not load your bookings from backend.");
-        setBookings([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     loadBookings();
   }, [isLoggedIn, navigate, user]);
+
+  async function handleCancelBooking(bookingId) {
+    const confirmCancel = window.confirm(
+      "Are you sure you want to cancel this booking?"
+    );
+
+    if (!confirmCancel) {
+      return;
+    }
+
+    try {
+      setCancelLoadingId(bookingId);
+      setError("");
+
+      await cancelBookingById(bookingId);
+      await loadBookings();
+
+      alert("Booking cancelled successfully.");
+    } catch (err) {
+      setError("Could not cancel booking. Please try again.");
+    } finally {
+      setCancelLoadingId(null);
+    }
+  }
 
   return (
     <div className="my-bookings-page">
@@ -136,7 +165,17 @@ function MyBookingsPage() {
                 </p>
 
                 <p>
-                  Booking Status: <strong>{booking.bookingStatus}</strong>
+                  Booking Status:{" "}
+                  <strong
+                    style={{
+                      color:
+                        booking.bookingStatus === "cancelled"
+                          ? "#dc2626"
+                          : "#166534",
+                    }}
+                  >
+                    {booking.bookingStatus}
+                  </strong>
                 </p>
 
                 <span
@@ -164,9 +203,16 @@ function MyBookingsPage() {
                   Download Invoice
                 </button>
 
-                {booking.paymentStatus === "Pending Payment" && (
-                  <button type="button" className="cancel-button">
-                    Cancel Booking
+                {booking.bookingStatus !== "cancelled" && (
+                  <button
+                    type="button"
+                    className="cancel-button"
+                    onClick={() => handleCancelBooking(booking.id)}
+                    disabled={cancelLoadingId === booking.id}
+                  >
+                    {cancelLoadingId === booking.id
+                      ? "Cancelling..."
+                      : "Cancel Booking"}
                   </button>
                 )}
               </div>

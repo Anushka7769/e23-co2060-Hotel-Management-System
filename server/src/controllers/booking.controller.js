@@ -3,6 +3,7 @@ const {
   getBookingById,
   getBookingByReference,
   getBookingsByTouristId,
+  cancelBookingById,
   createBooking,
 } = require("../models/booking.model");
 
@@ -90,6 +91,30 @@ async function getBookingDetailsByReference(req, res) {
   }
 }
 
+async function cancelBooking(req, res) {
+  try {
+    const isCancelled = await cancelBookingById(req.params.id);
+
+    if (!isCancelled) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Booking cancelled successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to cancel booking",
+      error: error.message,
+    });
+  }
+}
+
 async function addBooking(req, res) {
   try {
     const requiredFields = [
@@ -132,5 +157,6 @@ module.exports = {
   listBookingsByTourist,
   getBookingDetails,
   getBookingDetailsByReference,
+  cancelBooking,
   addBooking,
 };
