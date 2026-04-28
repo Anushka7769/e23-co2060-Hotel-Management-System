@@ -131,6 +131,19 @@ async function getBookingsByTouristId(touristId) {
   return rows;
 }
 
+async function cancelBookingById(id) {
+  const [result] = await pool.query(
+    `
+    UPDATE bookings
+    SET booking_status = 'cancelled'
+    WHERE id = ?
+    `,
+    [id]
+  );
+
+  return result.affectedRows > 0;
+}
+
 async function createBooking(bookingData) {
   const {
     tourist_id,
@@ -187,5 +200,6 @@ module.exports = {
   getBookingById,
   getBookingByReference,
   getBookingsByTouristId,
+  cancelBookingById,
   createBooking,
 };

@@ -54,3 +54,17 @@ export async function getBookingByReference(bookingRef) {
 
   return data;
 }
+
+export async function cancelBookingById(bookingId) {
+  const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}/cancel`, {
+    method: "PATCH",
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to cancel booking");
+  }
+
+  return data;
+}
