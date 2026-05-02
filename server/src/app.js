@@ -23,7 +23,7 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allows Postman, curl, browser direct requests, and server-to-server requests
+    // Allow Postman, curl, direct browser requests, and server-to-server requests
     if (!origin) {
       return callback(null, true);
     }
@@ -39,23 +39,13 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
+// CORS must be before routes
 app.use(cors(corsOptions));
-
-// Fix for Express newer versions: do not use "*"
-app.options(/.*/, cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-
-app.use("/api", healthRoutes);
-app.use("/api", dbTestRoutes);
-app.use("/api/auth", authRoutes);
-app.use("/api/properties", propertyRoutes);
-app.use("/api/partner", partnerRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/bookings", bookingRoutes);
 
 app.get("/", (req, res) => {
   res.send("TourismHub LK Backend API");
@@ -69,6 +59,14 @@ app.get("/api/cors-test", (req, res) => {
     allowedOrigins,
   });
 });
+
+app.use("/api", healthRoutes);
+app.use("/api", dbTestRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/properties", propertyRoutes);
+app.use("/api/partner", partnerRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/bookings", bookingRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
