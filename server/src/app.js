@@ -13,13 +13,6 @@ const bookingRoutes = require("./routes/booking.routes");
 
 const app = express();
 
-/*
-  Allowed frontend URLs:
-  - Local tourist frontend: http://localhost:5173
-  - Local admin frontend: http://localhost:5174
-  - Deployed Vercel frontend
-  - Railway environment variables CLIENT_URL and ADMIN_CLIENT_URL
-*/
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
@@ -28,33 +21,44 @@ const allowedOrigins = [
   process.env.ADMIN_CLIENT_URL,
 ].filter(Boolean);
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin, like Postman, curl, or server-to-server requests
-      if (!origin) {
-        return callback(null, true);
-      }
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow Postman, curl, direct browser requests, and server-to-server requests
+    if (!origin) {
+      return callback(null, true);
+    }
 
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
 
-      return callback(new Error(`Not allowed by CORS: ${origin}`));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+    return callback(new Error(`Not allowed by CORS: ${origin}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
 
-// Handle preflight OPTIONS requests
-app.options("*", cors());
+// CORS must be before routes
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+app.get("/", (req, res) => {
+  res.send("TourismHub LK Backend API");
+});
+
+app.get("/api/cors-test", (req, res) => {
+  res.json({
+    success: true,
+    message: "CORS is working",
+    origin: req.headers.origin || "No origin header",
+    allowedOrigins,
+  });
+});
 
 app.use("/api", healthRoutes);
 app.use("/api", dbTestRoutes);
@@ -64,20 +68,6 @@ app.use("/api/partner", partnerRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/bookings", bookingRoutes);
 
-app.get("/", (req, res) => {
-  res.send("TourismHub LK Backend API");
-});
-
-// Simple CORS test route
-app.get("/api/cors-test", (req, res) => {
-  res.json({
-    success: true,
-    message: "CORS is working",
-    origin: req.headers.origin || "No origin header",
-  });
-});
-
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -86,7 +76,6 @@ app.use((req, res) => {
   });
 });
 
-// Error handler
 app.use((err, req, res, next) => {
   console.error("Server error:", err.message);
 
